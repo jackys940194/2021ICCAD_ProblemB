@@ -45,3 +45,4 @@ Example:
 ~~~
 $ make test 1 && make test 2
 ~~~
+test
