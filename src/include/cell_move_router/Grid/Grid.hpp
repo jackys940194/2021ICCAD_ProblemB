@@ -8,7 +8,7 @@ private:
   const unsigned long long Coordinate;
   int Capacity;
   int Demand;
-  unsigned Tag;
+  unsigned Tag;//don't know what is Tag means yet, it is not Input
 
 public:
   Grid(unsigned long long Coordinate, int Capacity)
