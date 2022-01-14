@@ -4,6 +4,8 @@
 *.dmd
 output_*.txt
 case5.txt
+case5B.txt
+case6B.txt
 case6.txt
 cell_move_router
 !cell_move_router/
