@@ -5,6 +5,28 @@
 namespace cell_move_router {
 namespace Mover {
 
+long long Mover::calGain(const std::pair<int, int> pos, const Input::Processed::CellInst *CellPtr) {
+  long long Gain = 0;
+  for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
+      //Gain += removeSegmentGain(GridManager->getNetGraphs()[NetPtr], CellPtr) - lookUp(GridManager->getNetGraphs()[NetPtr], CellPtr, pos);
+  }
+  return Gain;
+}
+
+void Mover::sortCandidatePos(std::vector<std::pair<int, int>> &CandidatePos, const Input::Processed::CellInst *CellPtr){
+  std::unordered_map<size_t, long long> posGain;
+
+  for (const auto &pos : CandidatePos) {
+    posGain[GridManager.coordinateTrans(pos.first, pos.second, 1)] = calGain(pos, CellPtr);
+  }
+
+  auto CandidatePosCmp = [&](const std::pair<int, int> a, const std::pair<int, int> b) {
+    
+    return posGain.at(GridManager.coordinateTrans(a.first, a.second, 1)) > posGain.at(GridManager.coordinateTrans(b.first, b.second, 1)); 
+  };
+  std::sort(CandidatePos.begin(), CandidatePos.end(), CandidatePosCmp);
+}
+
 void Mover::initalFreqMovedCell() {
   for (auto &Cell : InputPtr->getCellInsts()) {
     if (Cell.isMovable()) {
@@ -102,7 +124,8 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
         }
       }
     }
-    std::shuffle(CandidatePos.begin(), CandidatePos.end(), Random);
+    sortCandidatePos(CandidatePos, CellPtr);
+    //std::shuffle(CandidatePos.begin(), CandidatePos.end(), Random);
     auto OldCoord = GridManager.getCellCoordinate(CellPtr);
     {
       for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {

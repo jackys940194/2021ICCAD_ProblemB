@@ -1,5 +1,9 @@
 #include "cell_move_router/Router/GraphApproxRouter.hpp"
 #include "cell_move_router/CoordinateCodec.hpp"
+#include "cell_move_router/Grid/NetGraph.hpp"
+#include <map>
+#include <iostream>
+#include <cassert>
 
 namespace cell_move_router {
 namespace Router {
@@ -78,6 +82,34 @@ std::vector<Input::Processed::Route>
 RoutingGraphManager::createFinalRoute(const std::vector<size_t> &Eids,
                                       const Input::Processed::Net *Net) {
   auto Route = std::move(BondaryInfo->getRouteUnderMinLayer());
+  if(Eids.size() == 0) {
+    NetGraph::NetGraph g(nullptr, GridManager);  
+    GridManager->getNetGraphs()[Net] = std::move(g);
+    return Route;
+  }
+  NetGraph::NetGraph g(Net, GridManager);
+  std::map<std::tuple<unsigned long long, unsigned long long, unsigned long long>, size_t> RCL_to_id;
+  RCL_to_id.clear();
+  size_t id = 0;
+  for (auto &EdgeIdx : Eids) {
+      auto &Edge = G.getEdge(EdgeIdx);
+      auto Decode1 = BondaryInfo->getCodec().decode(Edge.v1);
+      auto Decode2 = BondaryInfo->getCodec().decode(Edge.v2);
+      int MinR = BondaryInfo->getMinR();
+      int MinC = BondaryInfo->getMinC();
+      int MinL = BondaryInfo->getMinL();
+      unsigned long long R1 = Decode1[0] + MinR, R2 = Decode2[0] + MinR;
+      unsigned long long C1 = Decode1[1] + MinC, C2 = Decode2[1] + MinC;
+      unsigned long long L1 = Decode1[2] + MinL, L2 = Decode2[2] + MinL;
+      if (!RCL_to_id.count({R1, C1, L1})) {
+          RCL_to_id[{R1, C1, L1}] = id++;
+      }
+      if (!RCL_to_id.count({R2, C2, L2})) {
+          RCL_to_id[{R2, C2, L2}] = id++;
+      }
+  }
+  g.setVertexNum(id);
+
   for (auto &EdgeIdx : Eids) {
     auto &Edge = G.getEdge(EdgeIdx);
     auto Decode1 = BondaryInfo->getCodec().decode(Edge.v1);
@@ -89,7 +121,16 @@ RoutingGraphManager::createFinalRoute(const std::vector<size_t> &Eids,
     unsigned long long C1 = Decode1[1] + MinC, C2 = Decode2[1] + MinC;
     unsigned long long L1 = Decode1[2] + MinL, L2 = Decode2[2] + MinL;
     Route.emplace_back(R1, C1, L1, R2, C2, L2, Net);
+    long long weight = 0;
+    if(L1 == L2) weight = GridManager->getInputPtr()->getLayers().at(L1-1).getPowerFactor() * 2;
+    else weight = GridManager->getInputPtr()->getLayers().at(L1-1).getPowerFactor() + GridManager->getInputPtr()->getLayers().at(L2-1).getPowerFactor();
+    g.addEdge(RCL_to_id[{R1, C1, L1}], RCL_to_id[{R2, C2, L2}], weight);
+    g.addVertex(R1, C1, L1, RCL_to_id[{R1, C1, L1}]);
+    g.addVertex(R2, C2, L2, RCL_to_id[{R2, C2, L2}]);
+
   }
+  g.setIsReal();
+  GridManager->getNetGraphs()[Net] = std::move(g);
   return Route;
 }
 

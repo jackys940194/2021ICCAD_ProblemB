@@ -4,6 +4,7 @@
 #include "cell_move_router/Grid/CellGrid.hpp"
 #include "cell_move_router/Grid/Grid.hpp"
 #include "cell_move_router/Input/Processed/Input.hpp"
+#include "cell_move_router/Grid/NetGraph.hpp"
 #include <limits>
 #include <ostream>
 #include <unordered_map>
@@ -30,10 +31,10 @@ class GridManager : Util::Outputable {
 
   std::unordered_set<unsigned> OverflowGrids;
 
+  std::unordered_map<const Input::Processed::Net *, NetGraph::NetGraph> NetGraphs;
+
   unsigned Tag;
   long long CurrentCost;
-
-  unsigned long long coordinateTrans(int R, int C, int L) const;
   
 
   void increaseTag() {
@@ -47,6 +48,7 @@ class GridManager : Util::Outputable {
   }
 
 public:
+  unsigned long long coordinateTrans(int R, int C, int L) const;
   std::tuple<int, int, int> coordinateInv(unsigned long long Coordinate) const;
   GridManager(const Input::Processed::Input *InputPtr);
   const Input::Processed::Input *getInputPtr() const { return InputPtr; }
@@ -88,6 +90,9 @@ public:
   }
   bool isOverflow() const { return OverflowGrids.size(); }
   void to_ostream(std::ostream &out) const override;
+  std::unordered_map<const Input::Processed::Net *, NetGraph::NetGraph>& getNetGraphs(){
+    return NetGraphs;
+  }
 };
 } // namespace Grid
 } // namespace cell_move_router
