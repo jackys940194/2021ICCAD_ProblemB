@@ -8,14 +8,14 @@ namespace Mover {
 void Mover::initalFreqMovedCell() {
   for (auto &Cell : InputPtr->getCellInsts()) {
     if (Cell.isMovable()) {
-      if (GridManager.getCellVoltageArea(&Cell).size())
-        continue; // TODO: handle Cell in VoltageArea
+      //if (GridManager.getCellVoltageArea(&Cell).size())
+        //continue; // TODO: handle Cell in VoltageArea
       FreqMovedCell.emplace(&Cell, 0);
     }
   }
 }
 bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
-                          const int Row, const int Col) {
+                          const int Row, const int Col, long long OgCost) {
   GridManager.addCell(CellPtr, Row, Col);
   if (GridManager.isOverflow()) {
     GridManager.removeCell(CellPtr);
@@ -27,7 +27,8 @@ bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
       std::pair<std::vector<cell_move_router::Input::Processed::Route>,
                 long long>>>
       OriginRoutes;
-  bool Accept = true;
+  bool Accept = true, flag = true;
+  auto total = 0;
   for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
     auto &OriginRoute = GridManager.getNetRoutes()[NetPtr];
     auto Pair = GraphApproxRouter.singleNetRoute(NetPtr, OriginRoute.first);
@@ -37,18 +38,25 @@ bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
       break;
     }
     auto Cost = GridManager.getRouteCost(NetPtr, Pair.first);
+    total += Cost;
     Input::Processed::Route::reduceRouteSegments(Pair.first);
     OriginRoute = {std::move(Pair.first), Cost};
     bool Overflow = GridManager.isOverflow();
     GridManager.addNet(NetPtr);
     assert(!GridManager.isOverflow());
   }
+  if(Accept && total > OgCost){
+    Accept = false;
+    flag = false;
+  }
   if (Accept) {
     return true;
   }
-  GridManager.getNetRoutes()[OriginRoutes.back().first] =
-      std::move(OriginRoutes.back().second);
-  OriginRoutes.pop_back();
+  if(flag){
+    GridManager.getNetRoutes()[OriginRoutes.back().first] =
+        std::move(OriginRoutes.back().second);
+    OriginRoutes.pop_back();
+  }
   while (OriginRoutes.size()) {
     GridManager.removeNet(OriginRoutes.back().first);
     GridManager.getNetRoutes()[OriginRoutes.back().first] =
@@ -75,13 +83,23 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
   unsigned MoveCnt = 0;
   for (auto &P : CellNetLength) {
     auto CellPtr = P.second;
+    auto OgCost = P.first; 
     int RowBeginIdx = 0, RowEndIdx = 0, ColBeginIdx = 0, ColEndIdx = 0;
-    std::tie(RowBeginIdx, RowEndIdx, ColBeginIdx, ColEndIdx) =
-        RC.getRegion(CellPtr);
     std::vector<std::pair<int, int>> CandidatePos;
-    for (int R = RowBeginIdx; R <= RowEndIdx; ++R) {
-      for (int C = ColBeginIdx; C <= ColEndIdx; ++C) {
+    if(GridManager.getCellVoltageArea(CellPtr).size()){
+      for(auto coord : GridManager.getCellVoltageArea(CellPtr)){
+        int R = 0, C = 0, L = 0;
+        std::tie(R,C,L) = GridManager.coordinateInv(coord);
         CandidatePos.emplace_back(R, C);
+      }
+    }
+    else{
+      std::tie(RowBeginIdx, RowEndIdx, ColBeginIdx, ColEndIdx) =
+          RC.getRegion(CellPtr);
+      for (int R = RowBeginIdx; R <= RowEndIdx; ++R) {
+        for (int C = ColBeginIdx; C <= ColEndIdx; ++C) {
+          CandidatePos.emplace_back(R, C);
+        }
       }
     }
     std::shuffle(CandidatePos.begin(), CandidatePos.end(), Random);
@@ -94,7 +112,7 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
     }
     bool Success = false;
     for (auto P : CandidatePos) {
-      if (add_and_route(CellPtr, P.first, P.second)) {
+      if (add_and_route(CellPtr, P.first, P.second, OgCost)) {
         Success = true;
         break;
       }

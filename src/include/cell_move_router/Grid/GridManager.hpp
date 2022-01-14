@@ -34,7 +34,7 @@ class GridManager : Util::Outputable {
   long long CurrentCost;
 
   unsigned long long coordinateTrans(int R, int C, int L) const;
-  std::tuple<int, int, int> coordinateInv(unsigned long long Coordinate) const;
+  
 
   void increaseTag() {
     if (Tag == std::numeric_limits<unsigned>::max()) {
@@ -47,6 +47,7 @@ class GridManager : Util::Outputable {
   }
 
 public:
+  std::tuple<int, int, int> coordinateInv(unsigned long long Coordinate) const;
   GridManager(const Input::Processed::Input *InputPtr);
   const Input::Processed::Input *getInputPtr() const { return InputPtr; }
   void addNet(const Input::Processed::Net *Net);
