@@ -16,6 +16,7 @@ namespace Grid {
 class GridManager : Util::Outputable {
   const Input::Processed::Input *InputPtr;
   const CoordinateCodec<unsigned long long> Codec;
+  long long *VLUT;
   std::vector<Grid> Grids;
   std::vector<CellGrid> CellGrids;
   std::unordered_map<const Input::Processed::CellInst *, unsigned long long>
@@ -32,7 +33,7 @@ class GridManager : Util::Outputable {
   std::unordered_set<unsigned> OverflowGrids;
 
   std::unordered_map<const Input::Processed::Net *, NetGraph::NetGraph> NetGraphs;
-
+  
   unsigned Tag;
   long long CurrentCost;
   
@@ -48,6 +49,8 @@ class GridManager : Util::Outputable {
   }
 
 public:
+  long long *getVLUT() {return VLUT;}
+  void buildVLUT(long long L);
   unsigned long long coordinateTrans(int R, int C, int L) const;
   std::tuple<int, int, int> coordinateInv(unsigned long long Coordinate) const;
   GridManager(const Input::Processed::Input *InputPtr);

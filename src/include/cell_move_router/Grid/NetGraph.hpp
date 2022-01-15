@@ -22,7 +22,7 @@ namespace NetGraph {
     struct Edge;
 
     struct Vertex {
-        Vertex(size_t R = 0, size_t C = 0, size_t L = 0, size_t id = 0): R(R), C(C), L(L), id(id) {}
+        Vertex(size_t R = 0, size_t C = 0, size_t L = 0, size_t id = 0): R(R), C(C), L(L), id(id), isReal(false), isDeleted(false) {}
         size_t R, C, L;
         size_t id;
         bool isReal;
@@ -43,10 +43,11 @@ namespace NetGraph {
         std::vector<Vertex> Vertices;
         std::vector<std::vector<Edge>> adj_list;
         std::map<std::tuple<size_t, size_t, size_t>, size_t> RCL_to_id;
+        int N;
       public:
         NetGraph() {}
         NetGraph(const Input::Processed::Net *Net, Grid::GridManager *GridManager): Net(Net), GridManager(GridManager) {}  
-        void setVertexNum(size_t num) { adj_list.resize(num); Vertices.resize(num); }
+        void setVertexNum(size_t num) { adj_list.resize(num); Vertices.resize(num); N = num; }
         void addEdge(size_t u, size_t v, long long weight) {
             adj_list[u].emplace_back(u, v, weight);
             adj_list[v].emplace_back(v, u, weight);
@@ -56,6 +57,10 @@ namespace NetGraph {
             RCL_to_id[{R, C, L}] = id;
         }
         void setIsReal();
+        void reset();
+        std::vector<Vertex> &getVertices() {return Vertices;}
+        const Input::Processed::Net *getNet() {return Net;}
+        long long route(const Input::Processed::CellInst *CellPtr);
     };
 }
 }

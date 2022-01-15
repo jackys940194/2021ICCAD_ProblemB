@@ -2,6 +2,122 @@
 #include <unordered_map>
 namespace cell_move_router {
 namespace Grid {
+
+void GridManager::buildVLUT(long long L) {
+  VLUT = new long long [2*2*L*L*L];
+  long long R, C, L1, L2, MRL;
+  long long now;
+  for(long long r=0;r<2;r++){
+      R = r*2*L*L*L;
+      for(long long c=0;c<2;c++){
+          C = c*L*L*L;
+          for(long long l1=0;l1<L;l1++){
+              L1 = l1*L*L;
+              for(long long l2=0;l2<L;l2++){
+                  L2 = l2*L;
+                  for(long long mrl=0;mrl<L;mrl++){
+                      MRL = mrl;
+                      now = R + C + L1 + L2 + MRL;
+                      if(r==1 && c==1){
+                          if(l1<=mrl && l2<=mrl){
+                              VLUT[now] = mrl-l1 + mrl-l2;
+                          }else{
+                              VLUT[now] = abs(l1-l2);
+                          }
+                      }else if(r==1 && c==0){
+                          if((mrl+1)%2==1){
+                              if(l1>mrl && l2>mrl){
+                                  if(l1==l2 && (l1+1)%2==0){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = abs(l1-l2);
+                                  }
+                              }else if(l1<=mrl && l2>mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else if(l1>mrl && l2<=mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else{
+                                  VLUT[now] = mrl-l1 + mrl-l2;
+                              }
+                          }else{
+                              if(l1>mrl && l2>mrl){
+                                  if(l1==l2 && (l1+1)%2==0){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = abs(l1-l2);
+                                  }
+                              }else if(l1<=mrl && l2>mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else if(l1>mrl && l2<=mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else{
+                                  if(l1==mrl && l2==mrl){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = mrl-l1 + mrl-l2;
+                                  }
+                              }
+                          }
+                      }else if(r==0 && c==1){
+                          if((mrl+1)%2==0){
+                              if(l1>mrl && l2>mrl){
+                                  if(l1==l2 && (l1+1)%2==1){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = abs(l1-l2);
+                                  }
+                              }else if(l1<=mrl && l2>mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else if(l1>mrl && l2<=mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else{
+                                  VLUT[now] = mrl-l1 + mrl-l2;
+                              }
+                          }else{
+                              if(l1>mrl && l2>mrl){
+                                  if(l1==l2 && (l1+1)%2==1){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = abs(l1-l2);
+                                  }
+                              }else if(l1<=mrl && l2>mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else if(l1>mrl && l2<=mrl){
+                                  VLUT[now] = abs(l1-l2);
+                              }else{
+                                  if(l1==mrl && l2==mrl){
+                                      VLUT[now] = 1;
+                                  }else{
+                                      VLUT[now] = mrl-l1 + mrl-l2;
+                                  }
+                              }
+                          }
+                      }else{
+                          if(l1>mrl && l2>mrl){
+                              if(l1==l2){
+                                  VLUT[now] = 1;
+                              }else{
+                                  VLUT[now] = abs(l1-l2);
+                              }
+                          }else if(l1<=mrl && l2>mrl){
+                              VLUT[now] = abs(l1-l2);
+                          }else if(l1>mrl && l2<=mrl){
+                              VLUT[now] = abs(l1-l2);
+                          }else{
+                              if(l1==mrl && l2==mrl){
+                                  VLUT[now] = 1;
+                              }else{
+                                  VLUT[now] = mrl-l1 + mrl-l2;
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+}
+
 GridManager::GridManager(const Input::Processed::Input *InputPtr)
     : InputPtr(InputPtr), Codec({InputPtr->getRowSize(), InputPtr->getColsize(),
                                  InputPtr->getLayers().size()}),
@@ -49,6 +165,7 @@ GridManager::GridManager(const Input::Processed::Input *InputPtr)
       }
     }
   }
+  buildVLUT((long long)InputPtr->getLayers().size());
 }
 
 unsigned long long GridManager::coordinateTrans(int R, int C, int L) const {

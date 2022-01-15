@@ -89,7 +89,6 @@ RoutingGraphManager::createFinalRoute(const std::vector<size_t> &Eids,
   }
   NetGraph::NetGraph g(Net, GridManager);
   std::map<std::tuple<unsigned long long, unsigned long long, unsigned long long>, size_t> RCL_to_id;
-  RCL_to_id.clear();
   size_t id = 0;
   for (auto &EdgeIdx : Eids) {
       auto &Edge = G.getEdge(EdgeIdx);
@@ -109,7 +108,6 @@ RoutingGraphManager::createFinalRoute(const std::vector<size_t> &Eids,
       }
   }
   g.setVertexNum(id);
-
   for (auto &EdgeIdx : Eids) {
     auto &Edge = G.getEdge(EdgeIdx);
     auto Decode1 = BondaryInfo->getCodec().decode(Edge.v1);
