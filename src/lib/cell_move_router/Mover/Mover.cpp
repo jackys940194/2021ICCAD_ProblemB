@@ -103,8 +103,8 @@ void Mover::sortCandidatePos(std::vector<std::pair<int, int>> &CandidatePos, con
 void Mover::initalFreqMovedCell() {
   for (auto &Cell : InputPtr->getCellInsts()) {
     if (Cell.isMovable()) {
-      if (GridManager.getCellVoltageArea(&Cell).size())
-        continue; // TODO: handle Cell in VoltageArea
+      /*if (GridManager.getCellVoltageArea(&Cell).size())
+        continue;*/ // TODO: handle Cell in VoltageArea
       FreqMovedCell.emplace(&Cell, 0);
     }
   }
@@ -183,10 +183,13 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
     int RowBeginIdx = 0, RowEndIdx = 0, ColBeginIdx = 0, ColEndIdx = 0;
     std::vector<std::pair<int, int>> CandidatePos;
     if(GridManager.getCellVoltageArea(CellPtr).size()){
+      std::tie(RowBeginIdx, RowEndIdx, ColBeginIdx, ColEndIdx) =
+          RC.getRegion(CellPtr);
       for(auto coord : GridManager.getCellVoltageArea(CellPtr)){
         int R = 0, C = 0, L = 0;
         std::tie(R,C,L) = GridManager.coordinateInv(coord);
-        CandidatePos.emplace_back(R, C);
+        if(R >= RowBeginIdx && R <= RowEndIdx && C >= ColBeginIdx && C <= ColEndIdx)
+          CandidatePos.emplace_back(R, C);
       }
     }
     else{
@@ -198,10 +201,10 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
         }
       }
     }
-    auto Timer = GlobalTimer::getInstance();
-    auto sortStart = Timer->getDuration<>().count();
+    //auto Timer = GlobalTimer::getInstance();
+    //auto sortStart = Timer->getDuration<>().count();
     sortCandidatePos(CandidatePos, CellPtr);
-    auto sortEnd = Timer->getDuration<>().count();
+    //auto sortEnd = Timer->getDuration<>().count();
     //std::cerr << "Sort CandidatePos Time: " << (sortEnd - sortStart)/1e9 << " seconds\n";
     //std::shuffle(CandidatePos.begin(), CandidatePos.end(), Random);
     auto OldCoord = GridManager.getCellCoordinate(CellPtr);
