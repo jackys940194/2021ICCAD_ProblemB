@@ -3,6 +3,7 @@
 #include "cell_move_router/RegionCalculator/FinalRegion.hpp"
 #include "cell_move_router/Router/GraphApproxRouter.hpp"
 #include <iostream>
+#include "GlobalTimer.hpp"
 
 namespace cell_move_router {
 void Solver::solve() {
@@ -23,7 +24,24 @@ void Solver::solve() {
   // TODO: fix FinalRegion infinite loop bug
   // RegionCalculator::FinalRegion FR(&GridManager);
   RegionCalculator::OptimalRegion OR(&GridManager);
-  Mover.move(OR, 0);
+  long long nowCost = GridManager.getCurrentCost();
+  long long newCost;
+  int round = 0;
+  bool improved;
+  //Grid::GridManager BestGridManager(GridManager);
+  auto Timer = GlobalTimer::getInstance();
+  do {
+    improved = false;
+    Mover.move(OR, round++);
+    newCost = GridManager.getCurrentCost();
+    std::cerr << "Move: "<<round-1<<" : "<<newCost<<std::endl;
+    if (newCost < nowCost) {
+      improved = true;
+      nowCost = newCost;
+      //BestGridManager = GridManager.copy();
+    }
+  } while(improved && !Timer->overTime());
+  //BestGridManager = GridManager.copy();
   long long MoveCost = GridManager.getCurrentCost();
   std::cerr << "After move:\n";
   std::cerr << "  CurrentCost: " << MoveCost * 0.0001 << '\n';

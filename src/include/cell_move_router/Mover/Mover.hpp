@@ -32,7 +32,7 @@ public:
   long long removeSegmentGain(NetGraph::NetGraph& netGraph, const Input::Processed::CellInst *CellPtr);
 
   bool add_and_route(const Input::Processed::CellInst *CellPtr, const int Row,
-                     const int Col, long long OgCost);
+                     const int Col);
   void move(RegionCalculator::RegionCalculator &RC, int Round);
 };
 

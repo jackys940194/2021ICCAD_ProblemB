@@ -8,6 +8,10 @@ namespace cell_move_router {
 template <class SizeTy = std::size_t>
 struct CoordinateCodec : private std::vector<SizeTy> {
   CoordinateCodec(std::initializer_list<SizeTy> L) : std::vector<SizeTy>(L) {}
+  // CoordinateCodec& operator=(const CoordinateCodec& other) {
+  //   *this = other;
+  //   return *this;
+  // }
   const SizeTy &at(std::size_t Id) const { return std::vector<SizeTy>::at(Id); }
   size_t dimension() const { return this->size(); }
   SizeTy max() const {

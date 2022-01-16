@@ -2,7 +2,38 @@
 #include <unordered_map>
 namespace cell_move_router {
 namespace Grid {
+/*
+GridManager::GridManager(const GridManager& other):InputPtr(other.InputPtr), Codec({InputPtr->getRowSize(), InputPtr->getColsize(),
+                                 InputPtr->getLayers().size()}) {
+    // this->InputPtr = other.InputPtr;
+    // this->Codec(CoordinateCodec<std::size_t>({InputPtr->getRowSize(), InputPtr->getColsize(),InputPtr->getLayers().size()}));
+    this->Grids = other.Grids;
+    this->CellGrids = other.CellGrids;
+    this->CellCoordinate = other.CellCoordinate;
+    this->NetRoutes = other.NetRoutes;
+    this->CellVoltageArea = other.CellVoltageArea;
+    this->NetPtrs = other.NetPtrs;
+    this->OverflowGrids = other.OverflowGrids;
+}
 
+GridManager GridManager::copy(){
+        GridManager ret(*this);
+        return ret;
+}
+
+// GridManager& GridManager::operator=(const GridManager& other) {
+//   this->InputPtr = other.InputPtr;
+//   this->Codec = other.Codec;
+//   this->Grids = other.Grids;
+//   this->CellGrids = other.CellGrids;
+//   this->CellCoordinate = other.CellCoordinate;
+//   this->NetRoutes = other.NetRoutes;
+//   this->CellVoltageArea = other.CellVoltageArea;
+//   this->NetPtrs = other.NetPtrs;
+//   this->OverflowGrids = other.OverflowGrids;
+//   return *this;
+// }
+*/
 void GridManager::buildVLUT(long long L) {
   VLUT = new long long [2*2*L*L*L];
   long long R, C, L1, L2, MRL;

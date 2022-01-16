@@ -54,6 +54,11 @@ public:
   unsigned long long coordinateTrans(int R, int C, int L) const;
   std::tuple<int, int, int> coordinateInv(unsigned long long Coordinate) const;
   GridManager(const Input::Processed::Input *InputPtr);
+  /*
+  GridManager(const GridManager& other); 
+  GridManager copy();
+  // GridManager& operator=(const GridManager& other); 
+  */
   const Input::Processed::Input *getInputPtr() const { return InputPtr; }
   void addNet(const Input::Processed::Net *Net);
   void removeNet(const Input::Processed::Net *Net);

@@ -110,7 +110,7 @@ void Mover::initalFreqMovedCell() {
   }
 }
 bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
-                          const int Row, const int Col, long long OgCost) {
+                          const int Row, const int Col) {
   GridManager.addCell(CellPtr, Row, Col);
   if (GridManager.isOverflow()) {
     GridManager.removeCell(CellPtr);
@@ -122,10 +122,12 @@ bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
       std::pair<std::vector<cell_move_router::Input::Processed::Route>,
                 long long>>>
       OriginRoutes;
-  bool Accept = true, flag = true;
-  long long total = 0;
+  std::vector<std::pair<const Input::Processed::Net *, NetGraph::NetGraph>> OriginNetGraphs;
+  bool Accept = true;
   for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
     auto &OriginRoute = GridManager.getNetRoutes()[NetPtr];
+    auto &OriginNetGraph = GridManager.getNetGraphs()[NetPtr];
+    OriginNetGraphs.emplace_back(NetPtr, std::move(OriginNetGraph));
     auto Pair = GraphApproxRouter.singleNetRoute(NetPtr, OriginRoute.first);
     OriginRoutes.emplace_back(NetPtr, std::move(OriginRoute));
     if (Pair.second == false) {
@@ -133,41 +135,52 @@ bool Mover::add_and_route(const Input::Processed::CellInst *CellPtr,
       break;
     }
     auto Cost = GridManager.getRouteCost(NetPtr, Pair.first);
-    total += Cost;
     Input::Processed::Route::reduceRouteSegments(Pair.first);
     OriginRoute = {std::move(Pair.first), Cost};
     bool Overflow = GridManager.isOverflow();
     GridManager.addNet(NetPtr);
     assert(!GridManager.isOverflow());
-  }/*
-  if(Accept && total >= OgCost){
-    Accept = false;
-    flag = false;
-  }*/
+  }
   if (Accept) {
-    //std::cout<<"Real Gain : "<<OgCost-total<<std::endl;
     return true;
   }
-  if(flag){
-    GridManager.getNetRoutes()[OriginRoutes.back().first] =
-        std::move(OriginRoutes.back().second);
-    OriginRoutes.pop_back();
-  }
+  GridManager.getNetGraphs()[OriginNetGraphs.back().first] = std::move(OriginNetGraphs.back().second);
+  GridManager.getNetRoutes()[OriginRoutes.back().first] =
+      std::move(OriginRoutes.back().second);
+  OriginRoutes.pop_back();
+  OriginNetGraphs.pop_back();
   while (OriginRoutes.size()) {
     GridManager.removeNet(OriginRoutes.back().first);
     GridManager.getNetRoutes()[OriginRoutes.back().first] =
         std::move(OriginRoutes.back().second);
     OriginRoutes.pop_back();
   }
+  while (OriginNetGraphs.size()) {
+    GridManager.getNetGraphs()[OriginNetGraphs.back().first] = std::move(OriginNetGraphs.back().second);
+    OriginNetGraphs.pop_back();
+  }
   GridManager.removeCell(CellPtr);
   return false;
 }
 void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
+  auto Timer = GlobalTimer::getInstance();
+  unsigned MaxMoveCnt = InputPtr->getMaxCellMove();
+  for (auto &P : FreqMovedCell) {
+    if (P.second != 0)
+      MaxMoveCnt -= P.second;
+  }
+
+  if(Round >= 1) assert(MaxMoveCnt == 0);
+
   std::vector<std::pair<long long, const Input::Processed::CellInst *>>
       CellNetLength;
+    assert(CellNetLength.size() == 0);
   for (auto &P : FreqMovedCell) {
     auto CellPtr = P.first;
     long long NetLength = 0;
+
+    if (MaxMoveCnt == 0 && FreqMovedCell.at(CellPtr) == 0) continue;
+
     for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
       NetLength += GridManager.getNetRoutes()[NetPtr].second;
     }
@@ -176,10 +189,9 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
   std::sort(
       CellNetLength.begin(), CellNetLength.end(),
       std::greater<std::pair<long long, const Input::Processed::CellInst *>>());
-  unsigned MoveCnt = 0;
+  unsigned MoveCnt = (Round == 0) ? 0 : -1;
   for (auto &P : CellNetLength) {
     auto CellPtr = P.second;
-    auto OgCost = P.first; 
     int RowBeginIdx = 0, RowEndIdx = 0, ColBeginIdx = 0, ColEndIdx = 0;
     std::vector<std::pair<int, int>> CandidatePos;
     if(GridManager.getCellVoltageArea(CellPtr).size()){
@@ -216,17 +228,18 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
     }
     bool Success = false;
     int candidateCnt = 0;
-    int CntMax = std::max((int)(CandidatePos.size()/10),10);
     for (auto P : CandidatePos) {
-      //if(candidateCnt++ > CntMax) break;
-      if (add_and_route(CellPtr, P.first, P.second, OgCost)) {
-        //std::cout<<"Real : "<<CellPtr->getInstName()<<" "<<P.first<<" "<<P.second<<std::endl;
+      if (Timer->overTime()) break;
+      if (add_and_route(CellPtr, P.first, P.second)) {
         Success = true;
         break;
       }
     }
     if (Success){
-      ++MoveCnt;
+      if (FreqMovedCell.at(CellPtr) == 0) {
+          ++MoveCnt;
+          FreqMovedCell[CellPtr]++;
+      }
       //std::cout<<"MoveCnt : "<<MoveCnt<<std::endl;
     }else {
       GridManager.addCell(CellPtr, OldCoord.first, OldCoord.second);
@@ -234,7 +247,8 @@ void Mover::move(RegionCalculator::RegionCalculator &RC, int Round) {
         GridManager.addNet(NetPtr);
       }
     }
-    if (MoveCnt == InputPtr->getMaxCellMove())
+    if (Timer->overTime()) break;
+    if (MoveCnt == MaxMoveCnt)
       break;
   }
 }
