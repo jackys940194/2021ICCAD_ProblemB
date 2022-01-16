@@ -25,15 +25,18 @@ void writeOutput(cell_move_router::Solver &Solver, int argc, char **argv) {
 
 int main(int argc, char **argv) {
   GlobalTimer::initialTimerAndSetTimeLimit(std::chrono::seconds(55 * 60));
-
+  auto Timer = GlobalTimer::getInstance();
+  auto inputStart = Timer->getDuration<>().count();
   auto Input = readInput(argc, argv);
+  auto inputEnd = Timer->getDuration<>().count();
+  std::cerr <<"Input time : "<< (inputEnd - inputStart) / 1e9 << " seconds\n";
 
   cell_move_router::Solver Solver(Input.get());
   Solver.solve();
-
+  inputStart = Timer->getDuration<>().count();
   writeOutput(Solver, argc, argv);
-
-  auto Timer = GlobalTimer::getInstance();
+  inputEnd = Timer->getDuration<>().count();
+  std::cerr <<"Output time : "<< (inputEnd - inputStart) / 1e9 << " seconds\n";
   std::cerr << Timer->getDuration<>().count() / 1e9 << " seconds\n";
   if (Timer->overTime()) {
     std::cerr << "overtime!!\n";

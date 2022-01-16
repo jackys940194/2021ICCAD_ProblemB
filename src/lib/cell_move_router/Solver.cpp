@@ -8,12 +8,15 @@
 namespace cell_move_router {
 void Solver::solve() {
   cell_move_router::Router::GraphApproxRouter Router(&GridManager);
+  auto Timer = GlobalTimer::getInstance();
 
   long long OriginalCost = GridManager.getCurrentCost();
   std::cerr << "Original:\n";
   std::cerr << "  CurrentCost: " << OriginalCost * 0.0001 << '\n';
-
+  auto inputStart = Timer->getDuration<>().count();
   Router.rerouteAll();
+  auto inputEnd = Timer->getDuration<>().count();
+  std::cerr <<"Pre-Route time : "<< (inputEnd - inputStart) / 1e9 << " seconds\n";
   long long FirstRerouteCost = GridManager.getCurrentCost();
   std::cerr << "After First re-route:\n";
   std::cerr << "  CurrentCost: " << FirstRerouteCost * 0.0001 << '\n';
@@ -29,7 +32,7 @@ void Solver::solve() {
   int round = 0;
   bool improved;
   //Grid::GridManager BestGridManager(GridManager);
-  auto Timer = GlobalTimer::getInstance();
+  inputStart = Timer->getDuration<>().count();
   do {
     improved = false;
     Mover.move(OR, round++);
@@ -42,6 +45,8 @@ void Solver::solve() {
     }
   } while(improved && !Timer->overTime());
   //BestGridManager = GridManager.copy();
+  inputEnd = Timer->getDuration<>().count();
+  std::cerr <<"Computation time : "<< (inputEnd - inputStart) / 1e9 << " seconds\n";
   long long MoveCost = GridManager.getCurrentCost();
   std::cerr << "After move:\n";
   std::cerr << "  CurrentCost: " << MoveCost * 0.0001 << '\n';
