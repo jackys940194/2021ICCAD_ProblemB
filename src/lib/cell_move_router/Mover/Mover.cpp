@@ -60,7 +60,7 @@ long long Mover::removeSegmentGain(NetGraph::NetGraph& netGraph, const Input::Pr
 long long Mover::calCost(const std::pair<int, int> pos, const Input::Processed::CellInst *CellPtr) {
   long long Cost = 0;
   for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
-      Cost += lookUp(GridManager.getNetGraphs()[NetPtr], pos, CellPtr);
+      Cost += NetPtr->getWeight() * lookUp(GridManager.getNetGraphs()[NetPtr], pos, CellPtr);
   }
   //std::cout<<pos.first<<" "<<pos.second<<" "<<Gain<<std::endl;
   return Cost;
@@ -73,7 +73,7 @@ void Mover::sortCandidatePos(std::vector<std::pair<int, int>> &CandidatePos, con
   // auto Timer = GlobalTimer::getInstance();
   // auto removeSegmetGainStart = Timer->getDuration<>().count();
   for (auto NetPtr : InputPtr->getRelativeNetsMap().at(CellPtr)) {
-      Gain += removeSegmentGain(GridManager.getNetGraphs()[NetPtr], CellPtr);// - lookUp(GridManager.getNetGraphs()[NetPtr], CellPtr, pos);
+      Gain +=  NetPtr->getWeight() * removeSegmentGain(GridManager.getNetGraphs()[NetPtr], CellPtr);// - lookUp(GridManager.getNetGraphs()[NetPtr], CellPtr, pos);
   }
   // auto removeSegmetGainEnd = Timer->getDuration<>().count();
   // std::cerr << "removeSegmetGain Time: " << (removeSegmetGainEnd - removeSegmetGainStart)/1e9 << " seconds\n";
